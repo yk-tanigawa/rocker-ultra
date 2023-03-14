@@ -2,13 +2,12 @@
 _Containerised RStudio with bells+whistles for HPC and everywhere_
 
 ----
-`rocker-ultra` aims to simplify launching an RStudio server in Singularity with a single wrapper script, 
-with managment of package directories per-version in your home directory, auto-free port finding, 
+`rocker-ultra` aims to simplify launching an RStudio server in Singularity with a single wrapper script, with management of package directories per-version in your home directory, auto-free port finding,
 per-session password generation and SSH port forwarding instructions for free. It is based on the
-[containers](https://www.rocker-project.org/use/singularity/) developed by the 
+[containers](https://www.rocker-project.org/use/singularity/) developed by the
 [rocker project](https://github.com/rocker-org/rocker-versioned2) (but not affiliated).
 
-By default `rocker-ultra` uses a custom image based on `rocker/rstudio` but with [Seurat](https://satijalab.org/seurat/) 
+By default, `rocker-ultra` uses a custom image based on `rocker/geospatial` but with [Seurat](https://satijalab.org/seurat/)
 dependencies pre-installed.
 
 ## Quickstart
@@ -16,13 +15,13 @@ dependencies pre-installed.
 Run:
 ```bash
 # Download the `rstudio.sh` from this repo
-wget https://raw.githubusercontent.com/MonashBioinformaticsPlatform/rocker-ultra/main/rstudio.sh
+wget https://raw.githubusercontent.com/yk-tanigawa/rocker-ultra/main/rstudio.sh
 
 chmod +x ./rstudio.sh
 ./rstudio.sh
 ```
 
-It may take some time to download images. Eventually you'll be presented with instructions to login, including a generated password, eg
+It may take some time to download images. Eventually, you'll be presented with instructions to log in, including a generated password, eg
 ```
 INFO:    Creating SIF file...
 INFO:    Build complete: rstudio_3.6.0.sif
@@ -52,20 +51,21 @@ If you'd like to select your R version, set the `IMAGE` environment variable lik
 ```
 IMAGE=rocker/rstudio:3.5.3 ./rstudio.sh
 ```
-As long as there is a corresponding versioned container provided by Rocker, most common R versions should work.
+As long as there is a corresponding versioned container provided by Rocker, the most common R versions should work.
 
-Note that by default the script uses a custom image based on `rocker/rstudio` (`pansapiens/rocker-seurat:4.1.1-4.0.4`) 
-that has the Seurat package and require dependencies pre-installed.
+Note that by default the script uses a custom image based on `rocker/geospatial` (`yosuketanigawa/rocker-geospatial-seurat:4.2.0-4.3.0`)
+that has the Seurat package and required dependencies pre-installed as in [Seurat's official Docker image](https://github.com/satijalab/seurat-docker).
+Please see the [Rocker images documentation](https://rocker-project.org/images/) for the base image and [`Dockerfile`](/dockerfiles/rocker-geospatial-seurat/4.2.0-4.3.0/Dockerfile).
 
 ----
 
-## Tunnelling to an M3 compute node
+## Tunneling to an M3 compute node
 
 _Now some very specific instructions, for users of the M3 / MASSIVE HPC cluster_
 
 You should run your RStudio session on a compute node, via a SLURM job submission, then SSH tunnel to that compute node.
 
-Just commandline, without using `~/.ssh/config`:
+Just command line, without using `~/.ssh/config`:
 ```bash
 # on login node, in tmux/screen (or adapt to sbatch)
 srun --mem=1G --time=0-12:00 --job-name=my-rstudio ./rstudio.sh
