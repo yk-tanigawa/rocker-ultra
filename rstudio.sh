@@ -12,7 +12,7 @@
 
 export RSTUDIO_PORT=8787
 # we bind those directories
-dir_lab=/data
+dir_lab=/net/bmc-lab5/data/kellis
 dir_home="/home/${USER}"
 
 #set -o xtrace
@@ -59,7 +59,7 @@ function get_port {
 
 # Make a dir name from the IMAGE
 IMAGE_SLASHED=$(echo "${IMAGE}" | sed 's/:/\//g' | sed 's/\.\./__/g')
-R_DIRS="${HOME}/.rstudio-rocker/${IMAGE_SLASHED}/"
+R_DIRS="/net/bmc-lab5/data/kellis/users/${USER}/.rstudio-rocker/${IMAGE_SLASHED}/"
 RSTUDIO_DOT_LOCAL="${R_DIRS}/.local/share/rstudio"
 RSTUDIO_DOT_CONFIG="${R_DIRS}/.config/rstudio"
 RSTUDIO_HOME="${R_DIRS}/session"
