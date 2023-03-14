@@ -10,12 +10,17 @@
 #  - Allow srun/sbatch from within the container.
 #
 
+export RSTUDIO_PORT=8787
+# we bind those directories
+dir_lab=/data
+dir_home="/home/${USER}"
+
 #set -o xtrace
 
 # We use this modified version of rocker/rstudio by default, with Seurat and required
 # dependencies already installed.
 # This version tag is actually {R_version}-{Seurat_version}
-IMAGE=${IMAGE:-pansapiens/rocker-seurat:4.2.0-4.1.0}
+IMAGE=${IMAGE:-yosuketanigawa/rocker-geospatial-seurat:4.2.0-4.3.0}
 # You can uncomment this if you've like vanilla rocker/rstudio
 #IMAGE=${IMAGE:-rocker/rstudio:4.1.1}
 
@@ -34,17 +39,11 @@ if [[ -z "$PASSWORD" ]]; then
 fi
 export PASSWORD
 
-SINGULARITY_VERSION=3.9.2
+SINGULARITY_VERSION=3.5.0
+module load singularity/${SINGULARITY_VERSION}
 # Use a shared cache location if unspecified
 # export SINGULARITY_CACHEDIR=${SINGULARITY_CACHEDIR:-"/scratch/df22/andrewpe/singularity_cache"}
 
-# We detect if we are on M3/MASSIVE by the hostname.
-# Hardcode this to `local` if you don't ever use M3/MASSIVE.
-if [[ $HOSTNAME == m3* ]]; then
-    HPC_ENV="m3"
-else
-    HPC_ENV="local"
-fi
 
 function get_port {
     # lsof doesn't return open ports for system services, so we use netstat
@@ -74,14 +73,7 @@ mkdir -p "${R_LIBS_USER}"
 mkdir -p "${RSTUDIO_TMP}/var/run"
 mkdir -p "${R_ENV_CACHE}"
 
-# mksquashfs isn't installed everywhere, so we pull on a head node
-if [[ $HPC_ENV == "m3" ]]; then
-    # we use `singularity test` instead of `pull` to avoid leaving a .img file around
-    #ssh m3.massive.org.au bash -c "true && \
-    #                               module load singularity/${SINGULARITY_VERSION} && \
-    #                               singularity test docker://${IMAGE}"
-    module load singularity/${SINGULARITY_VERSION}
-fi
+
 
 echo "Getting required containers ... this may take a while ..."
 CACHE_DIR=${SINGULARITY_CACHEDIR:-$HOME/.singularity/cache/}
@@ -127,34 +119,19 @@ LC_PAPER="C"
 # shellcheck disable=SC2034
 LC_MEASUREMENT="C"
 
-if [[ $HPC_ENV == 'm3' ]]; then
-    SINGULARITYENV_PASSWORD="${PASSWORD}" \
-    singularity exec --bind "${RSTUDIO_HOME}:${HOME}/.rstudio" \
-                     --bind "${RSTUDIO_TMP}:/tmp" \
-                     --bind "${RSTUDIO_TMP}/var:/var/lib/rstudio-server" \
-                     --bind "${RSTUDIO_TMP}/var/run:/var/run/rstudio-server" \
-                     --bind "${R_ENV_CACHE}:/home/rstudio/.local/share/renv" \
-                     --bind "${RSTUDIO_DOT_LOCAL}:/home/rstudio/.local/share/rstudio" \
-                     --bind "${RSTUDIO_DOT_CONFIG}:/home/rstudio/.config/rstudio" \
-                     --bind "${R_LIBS_USER}:/home/rstudio/R" \
-                     --bind /scratch:/scratch \
-                     --bind /projects:/projects \
-                     --writable-tmpfs \
-                     "${IMAGE_LOCATION}" \
-                     rserver --auth-none=1 --auth-pam-helper-path=pam-helper --www-port="${PORT}" --server-user=${USER}
-                     #--bind ${RSITELIB}:/usr/local/lib/R/site-library \
-else
-    SINGULARITYENV_PASSWORD="${PASSWORD}" \
-    singularity exec --bind "${RSTUDIO_HOME}:${HOME}/.rstudio" \
-                     --bind "${RSTUDIO_TMP}:/tmp" \
-                     --bind "${RSTUDIO_TMP}/var:/var/lib/rstudio-server" \
-                     --bind "${RSTUDIO_TMP}/var/run:/var/run/rstudio-server" \
-                     --bind "${R_ENV_CACHE}:/home/rstudio/.local/share/renv" \
-                     --bind "${RSTUDIO_DOT_LOCAL}:/home/rstudio/.local/share/rstudio" \
-                     --bind "${RSTUDIO_DOT_CONFIG}:/home/rstudio/.config/rstudio" \
-                     --bind "${R_LIBS_USER}:/home/rstudio/R" \
-                     "${IMAGE_LOCATION}" \
-                     rserver --auth-none=1 --auth-pam-helper-path=pam-helper --www-port="${PORT}" --server-user=${USER}
-fi
+SINGULARITYENV_PASSWORD="${PASSWORD}" \
+singularity exec \
+  --bind "${RSTUDIO_HOME}:${HOME}/.rstudio" \
+  --bind "${RSTUDIO_TMP}:/tmp" \
+  --bind "${RSTUDIO_TMP}/var:/var/lib/rstudio-server" \
+  --bind "${RSTUDIO_TMP}/var/run:/var/run/rstudio-server" \
+  --bind "${R_ENV_CACHE}:/home/rstudio/.local/share/renv" \
+  --bind "${RSTUDIO_DOT_LOCAL}:/home/rstudio/.local/share/rstudio" \
+  --bind "${RSTUDIO_DOT_CONFIG}:/home/rstudio/.config/rstudio" \
+  --bind "${R_LIBS_USER}:/home/rstudio/R" \
+  --bind "${dir_lab}:${dir_lab}" \
+  --bind "${dir_home}:${dir_home}" \
+  "${IMAGE_LOCATION}" \
+  rserver --auth-none=1 --auth-pam-helper-path=pam-helper --www-port="${PORT}" --server-user="${USER}"
 
 printf 'rserver exited' 1>&2
