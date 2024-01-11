@@ -10,26 +10,29 @@
 #  - Allow srun/sbatch from within the container.
 #
 
-export RSTUDIO_PORT=8787
+export RSTUDIO_PORT=15151
 # we bind those directories
 dir_lab=/net/bmc-lab5/data/kellis
+dir_lab2=/net/bmc-lab4/data/kellis
 dir_home="/home/${USER}"
 
 #set -o xtrace
 
-# We use this modified version of rocker/rstudio by default, with Seurat and required
-# dependencies already installed.
-# This version tag is actually {R_version}-{Seurat_version}
-IMAGE=${IMAGE:-yosuketanigawa/rocker-geospatial-seurat:4.2.0-4.3.0}
-# You can uncomment this if you've like vanilla rocker/rstudio
-#IMAGE=${IMAGE:-rocker/rstudio:4.1.1}
+# # We use this modified version of rocker/rstudio by default, with Seurat and required
+# # dependencies already installed.
+# # This version tag is actually {R_version}-{Seurat_version}
+# IMAGE=${IMAGE:-yosuketanigawa/rocker-geospatial-seurat:4.2.0-4.3.0}
+# # You can uncomment this if you've like vanilla rocker/rstudio
+# #IMAGE=${IMAGE:-rocker/rstudio:4.1.1}
 
-# Fully qualify the image location if not specified
-if [[ "$IMAGE" =~ ^docker-daemon:|^docker://|^\.|^/ ]]; then
-  IMAGE_LOCATION=$IMAGE
-else
-  IMAGE_LOCATION="docker://$IMAGE"
-fi
+# # Fully qualify the image location if not specified
+# if [[ "$IMAGE" =~ ^docker-daemon:|^docker://|^\.|^/ ]]; then
+#   IMAGE_LOCATION=$IMAGE
+# else
+#   IMAGE_LOCATION="docker://$IMAGE"
+# fi
+
+IMAGE_LOCATION="/net/bmc-lab5/data/kellis/group/tanigawa/software/rstudio_yt/rstudio_yt_20230712.sif"
 
 PORT=${RSTUDIO_PORT:-8787}
 
@@ -59,7 +62,7 @@ function get_port {
 
 # Make a dir name from the IMAGE
 IMAGE_SLASHED=$(echo "${IMAGE}" | sed 's/:/\//g' | sed 's/\.\./__/g')
-R_DIRS="/net/bmc-lab5/data/kellis/users/${USER}/.rstudio-rocker/${IMAGE_SLASHED}/"
+R_DIRS="/net/bmc-lab4/data/kellis/users/${USER}/.rstudio-rocker/${IMAGE_SLASHED}/"
 RSTUDIO_DOT_LOCAL="${R_DIRS}/.local/share/rstudio"
 RSTUDIO_DOT_CONFIG="${R_DIRS}/.config/rstudio"
 RSTUDIO_HOME="${R_DIRS}/session"
@@ -73,7 +76,7 @@ mkdir -p "${R_LIBS_USER}"
 mkdir -p "${RSTUDIO_TMP}/var/run"
 mkdir -p "${R_ENV_CACHE}"
 
-
+if [ ! -d /tmp/${USER} ] ; then mkdir -p /tmp/${USER} ; fi
 
 echo "Getting required containers ... this may take a while ..."
 CACHE_DIR=${SINGULARITY_CACHEDIR:-$HOME/.singularity/cache/}
@@ -130,8 +133,11 @@ singularity exec \
   --bind "${RSTUDIO_DOT_CONFIG}:/home/rstudio/.config/rstudio" \
   --bind "${R_LIBS_USER}:/home/rstudio/R" \
   --bind "${dir_lab}:${dir_lab}" \
+  --bind "${dir_lab2}:${dir_lab2}" \
   --bind "${dir_home}:${dir_home}" \
+  --bind /tmp/${USER}:/tmp_${USER} \
   "${IMAGE_LOCATION}" \
   rserver --auth-none=1 --auth-pam-helper-path=pam-helper --www-port="${PORT}" --server-user="${USER}"
 
 printf 'rserver exited' 1>&2
+
